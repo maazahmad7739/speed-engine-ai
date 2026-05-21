@@ -6,16 +6,10 @@ const rootDir = __dirname;
 
 console.log('--- SpeedEngine Native Render Build ---');
 
-// 1. Install frontend dependencies and build
-console.log('Installing frontend dependencies...');
-execSync('npm install --no-audit --no-fund', { cwd: path.join(rootDir, 'frontend'), stdio: 'inherit' });
-
+// 1. Build frontend (Static Export)
 console.log('Building frontend (Static Export)...');
-execSync('npm run build', { cwd: path.join(rootDir, 'frontend'), stdio: 'inherit' });
+execSync('npm run build -w frontend', { cwd: rootDir, stdio: 'inherit' });
 
-// 2. Install backend dependencies
-console.log('Installing backend dependencies...');
-execSync('npm install --no-audit --no-fund', { cwd: path.join(rootDir, 'backend'), stdio: 'inherit' });
 
 
 // 3. Copy frontend out directory to backend public directory
