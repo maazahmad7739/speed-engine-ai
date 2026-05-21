@@ -12,10 +12,29 @@ async function getSharedBrowser() {
     browserLastUsed = Date.now();
     return sharedBrowser;
   }
-  sharedBrowser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process']
-  });
+  if (process.env.RENDER === 'true') {
+    console.log('[Proxy] Launching on Render using @sparticuz/chromium');
+    const chromium = await import('@sparticuz/chromium');
+    sharedBrowser = await puppeteer.launch({
+      args: [
+        ...chromium.default.args, 
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage',
+        '--disable-web-security',
+        '--disable-features=IsolateOrigins,site-per-process'
+      ],
+      defaultViewport: chromium.default.defaultViewport,
+      executablePath: await chromium.default.executablePath(),
+      headless: chromium.default.headless === true || chromium.default.headless === 'shell' ? chromium.default.headless : 'new',
+    });
+  } else {
+    console.log('[Proxy] Launching locally with standard Chrome');
+    sharedBrowser = await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process']
+    });
+  }
   browserLastUsed = Date.now();
   return sharedBrowser;
 }
@@ -87,7 +106,7 @@ async function fetchRenderedHtml(targetUrl, timeout = 20000) {
     });
 
     await page.goto(targetUrl, { 
-      waitUntil: 'networkidle2', 
+      waitUntil: 'domcontentloaded', 
       timeout 
     });
 
