@@ -8,14 +8,15 @@ console.log('--- SpeedEngine Native Render Build ---');
 
 // 1. Install frontend dependencies and build
 console.log('Installing frontend dependencies...');
-execSync('npm ci', { cwd: path.join(rootDir, 'frontend'), stdio: 'inherit' });
+execSync('npm install --no-audit --no-fund', { cwd: path.join(rootDir, 'frontend'), stdio: 'inherit' });
 
 console.log('Building frontend (Static Export)...');
 execSync('npm run build', { cwd: path.join(rootDir, 'frontend'), stdio: 'inherit' });
 
 // 2. Install backend dependencies
 console.log('Installing backend dependencies...');
-execSync('npm ci', { cwd: path.join(rootDir, 'backend'), stdio: 'inherit' });
+execSync('npm install --no-audit --no-fund', { cwd: path.join(rootDir, 'backend'), stdio: 'inherit' });
+
 
 // 3. Copy frontend out directory to backend public directory
 console.log('Copying frontend build output to backend/public...');
