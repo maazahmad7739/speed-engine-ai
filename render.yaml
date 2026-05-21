@@ -1,8 +1,10 @@
 services:
   - type: web
     name: speed-engine-ai
-    env: docker
+    env: node
     plan: free
+    buildCommand: node build.js
+    startCommand: node backend/server.js
     envVars:
       - key: GEMINI_API_KEY
         sync: false
