@@ -2,6 +2,27 @@ import puppeteer from 'puppeteer';
 import { URL } from 'url';
 import { generateAIFixes } from './refactorer.js';
 
+// Helper to launch Puppeteer browser with dynamic @sparticuz/chromium in Render
+async function launchBrowser() {
+  if (process.env.RENDER === 'true') {
+    console.log('[Puppeteer] Launching on Render using @sparticuz/chromium');
+    const chromium = await import('@sparticuz/chromium');
+    return await puppeteer.launch({
+      args: [...chromium.default.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      defaultViewport: chromium.default.defaultViewport,
+      executablePath: await chromium.default.executablePath(),
+      headless: chromium.default.headless === true || chromium.default.headless === 'shell' ? chromium.default.headless : 'new',
+    });
+  } else {
+    console.log('[Puppeteer] Launching locally with standard Chrome');
+    return await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+  }
+}
+
+
 // Simple helper to sleep
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -128,10 +149,7 @@ async function runPuppeteerCodeScraper(url, mobilePSI) {
   };
 
   try {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await launchBrowser();
     
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 800 });
@@ -555,10 +573,7 @@ async function runLocalPuppeteerScan(url, apiError = '') {
   const consoleErrors = [];
 
   try {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await launchBrowser();
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 800 });
 

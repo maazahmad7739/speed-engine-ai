@@ -45,12 +45,17 @@ if (fs.existsSync(destDir)) {
 copyDir(srcDir, destDir);
 console.log('Copied frontend build output successfully.');
 
-// 4. Install Chromium for Puppeteer
-console.log('Installing Chromium browser for Puppeteer...');
-try {
-  execSync('npx puppeteer browsers install chrome', { cwd: path.join(rootDir, 'backend'), stdio: 'inherit' });
-} catch (err) {
-  console.warn('Warning: npx puppeteer browsers install chrome failed. Trying fallback...');
+// 4. Install Chromium for Puppeteer (Local only)
+if (process.env.RENDER !== 'true') {
+  console.log('Installing Chromium browser for Puppeteer...');
+  try {
+    execSync('npx puppeteer browsers install chrome', { cwd: path.join(rootDir, 'backend'), stdio: 'inherit' });
+  } catch (err) {
+    console.warn('Warning: npx puppeteer browsers install chrome failed. Trying fallback...');
+  }
+} else {
+  console.log('Running on Render: Skipping chrome download as @sparticuz/chromium will be used at runtime.');
 }
 
 console.log('--- Build Completed Successfully! ---');
+
