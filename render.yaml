@@ -3,10 +3,14 @@ services:
     name: speed-engine-ai
     env: node
     plan: free
-    buildCommand: node build.js
+    buildCommand: npm install && npm run build
     startCommand: node backend/server.js
     envVars:
       - key: GEMINI_API_KEY
         sync: false
+      - key: RENDER
+        value: "true"
       - key: PUPPETEER_CACHE_DIR
         value: /opt/render/project/src/backend/.cache/puppeteer
+      - key: NODE_VERSION
+        value: "20.18.0"

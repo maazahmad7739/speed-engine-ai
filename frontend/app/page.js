@@ -649,12 +649,18 @@ export default function Dashboard() {
     }, 500);
 
     try {
-      // Start API scan concurrently
-      const response = await fetch(`${API_BASE}/api/scan?url=${encodeURIComponent(formattedUrl)}`);
+      // Start API scan concurrently (120s timeout for cold-start Render instances)
+      const scanController = new AbortController();
+      const scanTimeout = setTimeout(() => scanController.abort(), 120000);
+      const response = await fetch(`${API_BASE}/api/scan?url=${encodeURIComponent(formattedUrl)}`, {
+        signal: scanController.signal
+      });
+      clearTimeout(scanTimeout);
       clearInterval(p1Timer);
 
       if (!response.ok) {
-        throw new Error('Scan failed. Please verify the URL is public and online, then try again.');
+        const errBody = await response.text().catch(() => '');
+        throw new Error(errBody || 'Scan failed. Please verify the URL is public and online, then try again.');
       }
       
       const data = await response.json();
@@ -810,7 +816,14 @@ export default function Dashboard() {
       });
 
     } catch (err) {
-      setErrorMessage(err.message);
+      clearInterval(p1Timer);
+      let userMessage = err.message;
+      if (err.name === 'AbortError') {
+        userMessage = 'Analysis timed out. The server may be warming up — please wait 30 seconds and try again.';
+      } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        userMessage = 'Could not reach the analysis server. It may be starting up — please try again in a moment.';
+      }
+      setErrorMessage(userMessage);
       setScanStatus('error');
     }
   };
