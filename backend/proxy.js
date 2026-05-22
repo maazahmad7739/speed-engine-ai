@@ -82,14 +82,18 @@ async function fetchRenderedHtml(targetUrl, timeout = 20000) {
       .replace(/<[^>]+>/g, '')
       .trim();
 
-    if (visibleContent.length > 200) {
-      // Has real content — server-rendered, use it
+    if (visibleContent.length > 200 || process.env.RENDER === 'true') {
+      // Has real content OR we are on Render where Puppeteer is too heavy
       console.log(`[Proxy] Using fetch result (${visibleContent.length} chars visible content)`);
       return html;
     }
     
     console.log(`[Proxy] Fetch returned a JS shell (${visibleContent.length} chars). Falling back to Puppeteer render.`);
   } catch (err) {
+    if (process.env.RENDER === 'true') {
+      console.error(`[Proxy] Fetch failed on Render: ${err.message}. Bypassing Puppeteer to avoid timeout.`);
+      throw err;
+    }
     console.log(`[Proxy] Fetch failed (${err.message}). Falling back to Puppeteer render.`);
   }
 

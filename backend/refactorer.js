@@ -95,7 +95,7 @@ ${code}
 Refactor the snippet to optimize performance while keeping functionality exactly the same.
 `;
 
-    const result = await model.generateContent({
+    const apiCall = model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: 'application/json',
@@ -103,6 +103,11 @@ Refactor the snippet to optimize performance while keeping functionality exactly
       }
     });
 
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini API call timed out')), 15000)
+    );
+
+    const result = await Promise.race([apiCall, timeoutPromise]);
     const text = result.response.text();
     return JSON.parse(text);
   } catch (error) {
@@ -317,7 +322,7 @@ ${JSON.stringify(targetAudits, null, 2)}
 
 Produce a JSON array of fixes. Make sure code fixes are actual correct code solving the problems.`;
 
-    const result = await model.generateContent({
+    const apiCall = model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: 'application/json',
@@ -325,6 +330,11 @@ Produce a JSON array of fixes. Make sure code fixes are actual correct code solv
       }
     });
 
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini API call timed out')), 15000)
+    );
+
+    const result = await Promise.race([apiCall, timeoutPromise]);
     const text = result.response.text();
     // Parse response
     const parsedFixes = JSON.parse(text);
