@@ -3,6 +3,10 @@ node_modules/
 backend/node_modules/
 frontend/node_modules/
 
+# Sub-workspace lockfiles (only root package-lock.json should be committed)
+frontend/package-lock.json
+backend/package-lock.json
+
 # Next.js build and export outputs
 frontend/.next/
 frontend/out/

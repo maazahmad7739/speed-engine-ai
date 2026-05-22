@@ -6,7 +6,11 @@ const rootDir = __dirname;
 
 console.log('--- SpeedEngine Native Render Build ---');
 
-// 1. Build frontend (Static Export)
+// 1. Install all workspace dependencies (ensures 'next' and other binaries are available)
+console.log('Installing all workspace dependencies...');
+execSync('npm install --no-audit --no-fund', { cwd: rootDir, stdio: 'inherit' });
+
+// 2. Build frontend (Static Export)
 console.log('Building frontend (Static Export)...');
 execSync('npm run build -w frontend', { cwd: rootDir, stdio: 'inherit' });
 
