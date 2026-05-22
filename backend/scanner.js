@@ -50,8 +50,10 @@ function isUrlLocal(targetUrl) {
 
 // Fetch helper for PageSpeed Insights API
 async function fetchFromPSI(url, strategy = 'mobile') {
-  const psiUrl = `https://pagespeedonline.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&category=performance&category=accessibility&category=best-practices&category=seo`;
-  console.log(`[PSI API] Fetching real-time audit for: ${url} [Strategy: ${strategy}]`);
+  const apiKey = process.env.PSI_API_KEY || process.env.PAGESPEED_API_KEY || '';
+  const keyParam = apiKey ? `&key=${apiKey}` : '';
+  const psiUrl = `https://pagespeedonline.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=${strategy}&category=performance&category=accessibility&category=best-practices&category=seo${keyParam}`;
+  console.log(`[PSI API] Fetching real-time audit for: ${url} [Strategy: ${strategy}]${apiKey ? ' (using API key)' : ''}`);
   
   const res = await fetch(psiUrl);
   if (!res.ok) {
@@ -152,6 +154,7 @@ async function runPuppeteerCodeScraper(url, mobilePSI) {
     browser = await launchBrowser();
     
     const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
     
     // Start coverage
@@ -167,21 +170,27 @@ async function runPuppeteerCodeScraper(url, mobilePSI) {
         if (status >= 400) return;
         
         let size = 0;
-        try {
-          const buffer = await response.buffer();
-          size = buffer.length;
-        } catch (_) {
-          const lenHeader = response.headers()['content-length'];
-          size = lenHeader ? parseInt(lenHeader, 10) : 0;
-        }
-        
+        // ONLY call response.buffer() for the main page document to optimize CPU/RAM usage and avoid timeouts
         if (reqUrl === url || reqUrl === url + '/') {
-          assets.htmlSize = size;
+          try {
+            const buffer = await response.buffer();
+            size = buffer.length;
+            assets.htmlSize = size;
+          } catch (_) {
+            const lenHeader = response.headers()['content-length'];
+            assets.htmlSize = lenHeader ? parseInt(lenHeader, 10) : 25000;
+          }
         } else if (contentType.includes('javascript') || reqUrl.endsWith('.js')) {
+          const lenHeader = response.headers()['content-length'];
+          size = lenHeader ? parseInt(lenHeader, 10) : 15000;
           assets.js.push({ url: reqUrl, size, unused: 0 });
         } else if (contentType.includes('css') || reqUrl.endsWith('.css')) {
+          const lenHeader = response.headers()['content-length'];
+          size = lenHeader ? parseInt(lenHeader, 10) : 8000;
           assets.css.push({ url: reqUrl, size, unused: 0 });
         } else if (contentType.includes('image') || /\.(png|jpe?g|webp|gif|svg)$/i.test(reqUrl)) {
+          const lenHeader = response.headers()['content-length'];
+          size = lenHeader ? parseInt(lenHeader, 10) : 35000;
           assets.images.push({ url: reqUrl, size, type: contentType.split('/')[1] || 'image' });
         }
       } catch (err) {
@@ -575,6 +584,7 @@ async function runLocalPuppeteerScan(url, apiError = '') {
   try {
     browser = await launchBrowser();
     const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
 
     // Catch page errors and console errors
@@ -599,21 +609,28 @@ async function runLocalPuppeteerScan(url, apiError = '') {
         const reqUrl = response.url();
         const contentType = response.headers()['content-type'] || '';
         let size = 0;
-        try {
-          const buffer = await response.buffer();
-          size = buffer.length;
-        } catch (_) {
-          const len = response.headers()['content-length'];
-          size = len ? parseInt(len, 10) : 0;
-        }
-
+        
+        // ONLY call response.buffer() for the main page document to optimize CPU/RAM usage and avoid timeouts
         if (reqUrl === url || reqUrl === url + '/') {
-          assets.htmlSize = size;
+          try {
+            const buffer = await response.buffer();
+            size = buffer.length;
+            assets.htmlSize = size;
+          } catch (_) {
+            const len = response.headers()['content-length'];
+            assets.htmlSize = len ? parseInt(len, 10) : 15400;
+          }
         } else if (contentType.includes('javascript') || reqUrl.endsWith('.js')) {
+          const len = response.headers()['content-length'];
+          size = len ? parseInt(len, 10) : 15000;
           assets.js.push({ url: reqUrl, size, unused: 15 });
         } else if (contentType.includes('css') || reqUrl.endsWith('.css')) {
+          const len = response.headers()['content-length'];
+          size = len ? parseInt(len, 10) : 8000;
           assets.css.push({ url: reqUrl, size, unused: 25 });
         } else if (contentType.includes('image') || /\.(png|jpe?g|webp|gif|svg)$/i.test(reqUrl)) {
+          const len = response.headers()['content-length'];
+          size = len ? parseInt(len, 10) : 35000;
           assets.images.push({ url: reqUrl, size, type: contentType.split('/')[1] || 'image' });
         }
       } catch (_) {}

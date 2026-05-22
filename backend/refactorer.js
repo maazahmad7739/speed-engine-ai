@@ -273,7 +273,7 @@ export async function generateAIFixes(failedAudits) {
   }
 
   // Filter out audits that passed (score >= 90) and limit count to fit context and keep response time low
-  const targetAudits = failedAudits.filter(a => a.score < 90).slice(0, 10);
+  const targetAudits = failedAudits.filter(a => a.score < 90).slice(0, 4);
   if (targetAudits.length === 0) {
     return [];
   }
