@@ -1340,33 +1340,7 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* API Quota Warning Banner */}
-            {auditData.apiError && (
-              <div style={{
-                marginBottom: '20px',
-                padding: '14px 18px',
-                background: 'rgba(245, 158, 11, 0.08)',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <span style={{ fontSize: '20px', flexShrink: 0, marginTop: '1px' }}>⚠️</span>
-                <div>
-                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#f59e0b', marginBottom: '4px' }}>
-                    Google PageSpeed API Quota Exceeded
-                  </div>
-                  <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                    The free PSI API daily quota has been reached. Scores shown are <strong style={{ color: 'var(--text-main)' }}>approximations</strong> calculated 
-                    from a local Puppeteer browser scan using the official Lighthouse log-normal scoring curve. 
-                    For exact Google scores, try again tomorrow or add a <strong style={{ color: 'var(--text-main)' }}>Google Cloud API key</strong> to 
-                    the backend <code style={{ background: 'rgba(255,255,255,0.05)', padding: '1px 5px', borderRadius: '3px', fontSize: '11px' }}>.env</code> file 
-                    to increase your quota.
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {/* Circular Gauges Panel - 4 Core Categories */}
             <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap', gap: '24px', marginBottom: '32px', padding: '30px' }}>
