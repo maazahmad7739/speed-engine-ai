@@ -1293,7 +1293,28 @@ export default function Dashboard() {
           <div style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center' }} className="glass-panel">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2" style={{ marginBottom: '16px' }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="6" x2="12.01" y2="6"></line></svg>
             <h2 style={{ color: 'var(--danger)', fontSize: '22px', fontWeight: '700', marginBottom: '8px' }}>Analysis Attempt Failed</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>{errorMessage || 'Puppeteer could not resolve the URL. Please verify the link is public and online.'}</p>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '14px', lineHeight: '1.6' }}>{errorMessage || 'Puppeteer could not resolve the URL. Please verify the link is public and online.'}</p>
+            
+            {(errorMessage && (errorMessage.includes('blocked') || errorMessage.includes('status 429') || errorMessage.includes('status 400') || errorMessage.includes('API key') || errorMessage.includes('bare page'))) && (
+              <div style={{
+                textAlign: 'left',
+                background: 'rgba(239, 68, 68, 0.05)',
+                border: '1px solid rgba(239, 68, 68, 0.15)',
+                borderRadius: '8px',
+                padding: '12px 16px',
+                marginBottom: '24px',
+                fontSize: '13px',
+                color: 'var(--text-muted)'
+              }}>
+                <strong style={{ color: 'var(--danger)', display: 'block', marginBottom: '4px' }}>How to resolve this:</strong>
+                <ol style={{ paddingLeft: '20px', margin: '0', lineHeight: '1.6' }}>
+                  <li>Make sure you have set a valid <code style={{ color: '#fff', background: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '3px' }}>PSI_API_KEY</code> in your environment variables.</li>
+                  <li>Verify that your server (Render) has been redeployed with the environment variables active.</li>
+                  <li>Check if the Google Cloud Console has PageSpeed Insights API enabled for your key.</li>
+                </ol>
+              </div>
+            )}
+            
             <button className="btn-secondary" onClick={() => setScanStatus('idle')}>Try Again</button>
           </div>
         )}

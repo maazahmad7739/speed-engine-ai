@@ -8,7 +8,13 @@ async function launchBrowser() {
     console.log('[Puppeteer] Launching on Render using @sparticuz/chromium');
     const chromium = await import('@sparticuz/chromium');
     return await puppeteer.launch({
-      args: [...chromium.default.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      args: [
+        ...chromium.default.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-blink-features=AutomationControlled'
+      ],
       defaultViewport: chromium.default.defaultViewport,
       executablePath: await chromium.default.executablePath(),
       headless: chromium.default.headless === true || chromium.default.headless === 'shell' ? chromium.default.headless : 'new',
@@ -17,7 +23,11 @@ async function launchBrowser() {
     console.log('[Puppeteer] Launching locally with standard Chrome');
     return await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled'
+      ]
     });
   }
 }
@@ -154,6 +164,11 @@ async function runPuppeteerCodeScraper(url, mobilePSI) {
     browser = await launchBrowser();
     
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+    });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
     
@@ -584,6 +599,11 @@ async function runLocalPuppeteerScan(url, apiError = '') {
   try {
     browser = await launchBrowser();
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+    });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
 
@@ -635,11 +655,54 @@ async function runLocalPuppeteerScan(url, apiError = '') {
         }
       } catch (_) {}
     });
+    let mainResponse = null;
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      mainResponse = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await sleep(1500);
     } catch (gotoErr) {
       console.warn(`[Local Scan Warning] page.goto failed or timed out: ${gotoErr.message}`);
+      throw new Error(`Failed to load target website: ${gotoErr.message}. (Original API Error: ${apiError || 'None'})`);
+    }
+
+    if (!mainResponse) {
+      const content = await page.content().catch(() => '');
+      if (!content || content.length < 500) {
+        throw new Error(`Failed to load target website: No response received and page content is empty. (Original API Error: ${apiError || 'None'})`);
+      }
+    } else {
+      const status = mainResponse.status();
+      if (status >= 400) {
+        throw new Error(`Target website returned error status code ${status}. It may be blocking automated traffic. (Original API Error: ${apiError || 'None'})`);
+      }
+    }
+
+    const pageContent = await page.content().catch(() => '');
+    const pageTitle = await page.title().catch(() => '');
+
+    const blockKeywords = /cloudflare|captcha|access denied|forbidden|attention required|security check|robot|blocked|sucuri|akamai|incapsula|perimeterx|shield|ray id|unusual traffic|waf|firewall|ddos|access control|not allowed|verify you are a human|verify you are human|hcaptcha|recaptcha|reference #[0-9a-f.]+|request blocked/i;
+
+    const isBlockPage = blockKeywords.test(pageTitle) || (blockKeywords.test(pageContent) && pageContent.length < 60000);
+
+    if (isBlockPage) {
+      throw new Error(`Target website blocked the local scanner (Bot protection/WAF page detected). (Original API Error: ${apiError || 'None'})`);
+    }
+
+    if (pageContent.length < 500) {
+      throw new Error(`Target website returned a suspicious or empty page body (length: ${pageContent.length}). It may be blocking automated traffic. (Original API Error: ${apiError || 'None'})`);
+    }
+
+    const domStats = await page.evaluate(() => {
+      return {
+        domSize: document.querySelectorAll('*').length,
+        scriptCount: document.querySelectorAll('script').length,
+        cssCount: document.querySelectorAll('link[rel="stylesheet"]').length,
+      };
+    });
+
+    if (!isUrlLocal(url)) {
+      if (domStats.domSize < 40 || (domStats.scriptCount === 0 && domStats.cssCount === 0)) {
+        throw new Error(`Target website returned a suspiciously bare page structure (DOM size: ${domStats.domSize}, Scripts: ${domStats.scriptCount}). This usually happens when bot firewalls block local automated browsers. (Original API Error: ${apiError || 'None'})`);
+      }
     }
     
     // Evaluate paint & layout shifts

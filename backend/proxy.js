@@ -22,7 +22,8 @@ async function getSharedBrowser() {
         '--disable-setuid-sandbox', 
         '--disable-dev-shm-usage',
         '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process'
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-blink-features=AutomationControlled'
       ],
       defaultViewport: chromium.default.defaultViewport,
       executablePath: await chromium.default.executablePath(),
@@ -32,7 +33,13 @@ async function getSharedBrowser() {
     console.log('[Proxy] Launching locally with standard Chrome');
     sharedBrowser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-web-security', 
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-blink-features=AutomationControlled'
+      ]
     });
   }
   browserLastUsed = Date.now();
@@ -91,6 +98,11 @@ async function fetchRenderedHtml(targetUrl, timeout = 20000) {
   const page = await browser.newPage();
   
   try {
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+    });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
     
