@@ -214,7 +214,7 @@ async function runPuppeteerCodeScraper(url, mobilePSI) {
     });
 
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await sleep(1500);
     } catch (gotoErr) {
       console.warn(`[Scraper Warning] page.goto failed or timed out: ${gotoErr.message}`);
@@ -657,7 +657,7 @@ async function runLocalPuppeteerScan(url, apiError = '') {
     });
     let mainResponse = null;
     try {
-      mainResponse = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      mainResponse = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await sleep(1500);
     } catch (gotoErr) {
       console.warn(`[Local Scan Warning] page.goto failed or timed out: ${gotoErr.message}`);
@@ -1170,7 +1170,12 @@ async function runLocalPuppeteerScan(url, apiError = '') {
 
   } catch (err) {
     if (browser) await browser.close();
-    throw new Error(`Scanning failed for local URL: ${err.message}`);
+    const isLocal = isUrlLocal(url);
+    if (isLocal) {
+      throw new Error(`Scanning failed for local development URL: ${err.message}`);
+    } else {
+      throw new Error(`Scanning failed: ${err.message}`);
+    }
   }
 }
 
